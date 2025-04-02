@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { usePOS } from '@/contexts/POSContext';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Trash2, Plus, Minus, CreditCard, Cash } from 'lucide-react';
 
 const Cart: React.FC = () => {
   const { 
@@ -12,7 +12,8 @@ const Cart: React.FC = () => {
     getCartTotal,
     selectedPayment,
     setSelectedPayment,
-    placeOrder
+    placeOrder,
+    currency
   } = usePOS();
 
   return (
@@ -32,7 +33,7 @@ const Cart: React.FC = () => {
               <div key={item.id} className="flex items-center justify-between border-b pb-2">
                 <div className="flex-1">
                   <div className="font-medium">{item.name}</div>
-                  <div className="text-gray-500 text-sm">${item.price.toFixed(2)}</div>
+                  <div className="text-gray-500 text-sm">{currency} {item.price.toFixed(2)}</div>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -68,43 +69,36 @@ const Cart: React.FC = () => {
       <div className="p-4 border-t">
         <div className="flex justify-between mb-2">
           <span className="font-medium">Subtotal:</span>
-          <span>${getCartTotal().toFixed(2)}</span>
+          <span>{currency} {getCartTotal().toFixed(2)}</span>
         </div>
         <div className="flex justify-between mb-4">
           <span className="font-medium">Tax (10%):</span>
-          <span>${(getCartTotal() * 0.1).toFixed(2)}</span>
+          <span>{currency} {(getCartTotal() * 0.1).toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-lg font-bold mb-4">
           <span>Total:</span>
-          <span>${(getCartTotal() * 1.1).toFixed(2)}</span>
+          <span>{currency} {(getCartTotal() * 1.1).toFixed(2)}</span>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           <button
             onClick={() => setSelectedPayment('cash')}
-            className={`p-2 border rounded-md flex flex-col items-center justify-center ${
+            className={`p-3 border rounded-md flex flex-col items-center justify-center ${
               selectedPayment === 'cash' ? 'bg-pos-blue text-white' : 'bg-gray-50 hover:bg-gray-100'
             }`}
           >
-            <span className="text-xs">Cash</span>
+            <Cash className="mb-1" size={20} />
+            <span className="text-sm">Cash</span>
           </button>
           
           <button
             onClick={() => setSelectedPayment('card')}
-            className={`p-2 border rounded-md flex flex-col items-center justify-center ${
+            className={`p-3 border rounded-md flex flex-col items-center justify-center ${
               selectedPayment === 'card' ? 'bg-pos-blue text-white' : 'bg-gray-50 hover:bg-gray-100'
             }`}
           >
-            <span className="text-xs">Card</span>
-          </button>
-          
-          <button
-            onClick={() => setSelectedPayment('qr')}
-            className={`p-2 border rounded-md flex flex-col items-center justify-center ${
-              selectedPayment === 'qr' ? 'bg-pos-blue text-white' : 'bg-gray-50 hover:bg-gray-100'
-            }`}
-          >
-            <span className="text-xs">QR</span>
+            <CreditCard className="mb-1" size={20} />
+            <span className="text-sm">Card</span>
           </button>
         </div>
         

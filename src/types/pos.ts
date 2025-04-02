@@ -20,6 +20,7 @@ export interface Order {
   paymentMethod: 'cash' | 'card' | 'qr';
   timestamp: Date;
   tableNumber?: number;
+  sentToKitchen: boolean;
 }
 
 export interface Category {

@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 import { usePOS } from '@/contexts/POSContext';
 import { Product } from '@/types/pos';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Edit } from 'lucide-react';
 
 const InventoryView: React.FC = () => {
-  const { products, categories } = usePOS();
+  const { products, categories, updateProductInventory, currency } = usePOS();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editQuantity, setEditQuantity] = useState<number>(0);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -25,6 +27,16 @@ const InventoryView: React.FC = () => {
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  const startEditing = (product: Product) => {
+    setEditingProduct(product.id);
+    setEditQuantity(product.quantity);
+  };
+
+  const saveInventoryChange = (productId: string) => {
+    updateProductInventory(productId, editQuantity);
+    setEditingProduct(null);
   };
 
   const filteredProducts = products
@@ -78,7 +90,7 @@ const InventoryView: React.FC = () => {
         </div>
         <div className="bg-white p-4 rounded-lg shadow-md">
           <h3 className="text-sm text-gray-500">Stock Value</h3>
-          <p className="text-2xl font-bold">${getTotalStockValue().toFixed(2)}</p>
+          <p className="text-2xl font-bold">{currency} {getTotalStockValue().toFixed(2)}</p>
         </div>
       </div>
       
@@ -157,12 +169,15 @@ const InventoryView: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                     No products found
                   </td>
                 </tr>
@@ -179,10 +194,40 @@ const InventoryView: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      ${product.price.toFixed(2)}
+                      {currency} {product.price.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {product.quantity}
+                      {editingProduct === product.id ? (
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => setEditQuantity(Math.max(0, editQuantity - 1))}
+                            className="p-1 bg-gray-200 rounded"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <input
+                            type="number"
+                            value={editQuantity}
+                            onChange={(e) => setEditQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-16 mx-2 border rounded p-1 text-center"
+                            min="0"
+                          />
+                          <button
+                            onClick={() => setEditQuantity(editQuantity + 1)}
+                            className="p-1 bg-gray-200 rounded"
+                          >
+                            <Plus size={14} />
+                          </button>
+                          <button
+                            onClick={() => saveInventoryChange(product.id)}
+                            className="ml-2 bg-green-500 text-white p-1 px-2 rounded"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      ) : (
+                        <span>{product.quantity}</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -198,6 +243,23 @@ const InventoryView: React.FC = () => {
                           ? 'Low Stock'
                           : 'In Stock'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {editingProduct === product.id ? (
+                        <button 
+                          onClick={() => setEditingProduct(null)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => startEditing(product)} 
+                          className="text-indigo-600 hover:text-indigo-800 flex items-center"
+                        >
+                          <Edit size={14} className="mr-1" /> Edit Stock
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

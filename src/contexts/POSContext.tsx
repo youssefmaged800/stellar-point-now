@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, CartItem, Order, Category, ViewType, PaymentMethod } from '../types/pos';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ interface POSContextType {
   dayOpen: boolean;
   currentTime: Date;
   dayStartTime: Date | null;
+  currency: string;
   
   setActiveTab: (tab: ViewType) => void;
   setSearchTerm: (term: string) => void;
@@ -30,10 +32,12 @@ interface POSContextType {
   completeOrder: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   modifyOrder: (orderId: string) => void;
+  sendToKitchen: (orderId: string) => void;
   
   getCartTotal: () => number;
   openDay: () => void;
   closeDay: () => void;
+  updateProductInventory: (productId: string, newQuantity: number) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -62,6 +66,7 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   const [dayOpen, setDayOpen] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [dayStartTime, setDayStartTime] = useState<Date | null>(null);
+  const [currency, setCurrency] = useState<string>('EGP');
 
   useEffect(() => {
     const mockData = generateMockProducts();
@@ -102,15 +107,34 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     toast.success('Business day closed');
   };
 
+  const updateProductInventory = (productId: string, newQuantity: number) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId ? { ...product, quantity: newQuantity } : product
+      )
+    );
+    toast.success(`Product inventory updated`);
+  };
+
   const addToCart = (product: Product) => {
     if (!dayOpen) {
       toast.error('Cannot add items: Business day is not open');
       return;
     }
     
+    if (product.quantity <= 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
+
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
+        // Check if we have enough in inventory before adding
+        if (existingItem.quantity + 1 > product.quantity) {
+          toast.error(`Not enough ${product.name} in inventory`);
+          return prevCart;
+        }
         return prevCart.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -129,6 +153,13 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   const updateCartItemQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
+      return;
+    }
+
+    // Check inventory before updating
+    const product = products.find(p => p.id === productId);
+    if (product && quantity > product.quantity) {
+      toast.error(`Not enough ${product.name} in inventory`);
       return;
     }
     
@@ -164,6 +195,7 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
       return;
     }
 
+    // Prepare new order
     const newOrder: Order = {
       id: `ORD-${Date.now()}`,
       items: [...cart],
@@ -172,11 +204,40 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
       paymentMethod: selectedPayment,
       timestamp: new Date(),
       tableNumber: Math.floor(Math.random() * 20) + 1,
+      sentToKitchen: false,
     };
 
+    // Update inventory
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.id);
+      if (product) {
+        updateProductInventory(product.id, product.quantity - item.quantity);
+      }
+    });
+
     setOrders((prevOrders) => [...prevOrders, newOrder]);
+    
+    // Show success message
     toast.success(`Order #${newOrder.id} placed successfully`);
+    toast.success(`Payment received via ${selectedPayment}`, {
+      duration: 3000,
+    });
+
+    // Automatically send to kitchen
+    setTimeout(() => {
+      sendToKitchen(newOrder.id);
+    }, 500);
+
     clearCart();
+  };
+
+  const sendToKitchen = (orderId: string) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === orderId ? { ...order, sentToKitchen: true } : order
+      )
+    );
+    toast.success(`Order #${orderId} sent to kitchen`);
   };
 
   const completeOrder = (orderId: string) => {
@@ -194,6 +255,17 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   };
 
   const cancelOrder = (orderId: string) => {
+    const orderToCancel = orders.find(order => order.id === orderId);
+    if (orderToCancel) {
+      // Return items to inventory
+      orderToCancel.items.forEach(item => {
+        const product = products.find(p => p.id === item.id);
+        if (product) {
+          updateProductInventory(product.id, product.quantity + item.quantity);
+        }
+      });
+    }
+
     setOrders((prevOrders) =>
       prevOrders.map((order) =>
         order.id === orderId ? { ...order, status: 'cancelled' } : order
@@ -211,6 +283,14 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     const orderToModify = orders.find((order) => order.id === orderId);
     
     if (orderToModify) {
+      // Return items to inventory
+      orderToModify.items.forEach(item => {
+        const product = products.find(p => p.id === item.id);
+        if (product) {
+          updateProductInventory(product.id, product.quantity + item.quantity);
+        }
+      });
+
       setCart(orderToModify.items);
       setOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
       toast.info(`Modifying order #${orderId}`);
@@ -229,6 +309,7 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     dayOpen,
     currentTime,
     dayStartTime,
+    currency,
     
     setActiveTab,
     setSearchTerm,
@@ -244,10 +325,12 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     completeOrder,
     cancelOrder,
     modifyOrder,
+    sendToKitchen,
     
     getCartTotal,
     openDay,
     closeDay,
+    updateProductInventory,
   };
 
   return <POSContext.Provider value={value}>{children}</POSContext.Provider>;

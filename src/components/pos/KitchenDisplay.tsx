@@ -2,17 +2,28 @@
 import React, { useState, useEffect } from 'react';
 import { usePOS } from '@/contexts/POSContext';
 import { Order } from '@/types/pos';
-import { Clock, Check } from 'lucide-react';
+import { Clock, Check, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const KitchenDisplay: React.FC = () => {
   const { orders, completeOrder } = usePOS();
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [timers, setTimers] = useState<Record<string, number>>({});
+  const [newOrderAlert, setNewOrderAlert] = useState<string | null>(null);
 
   useEffect(() => {
-    // Filter only pending orders
-    const pending = orders.filter(order => order.status === 'pending');
+    // Filter only pending orders that have been sent to kitchen
+    const pending = orders.filter(order => order.status === 'pending' && order.sentToKitchen);
+    
+    // Check for new orders
+    const lastOrderIds = pendingOrders.map(o => o.id);
+    const newOrders = pending.filter(order => !lastOrderIds.includes(order.id));
+    
+    if (newOrders.length > 0) {
+      setNewOrderAlert(newOrders[0].id);
+      setTimeout(() => setNewOrderAlert(null), 5000);
+    }
+    
     setPendingOrders(pending);
 
     // Initialize timers for new orders
@@ -60,6 +71,13 @@ const KitchenDisplay: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold mb-6">Kitchen Display</h1>
       
+      {newOrderAlert && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 p-4 mb-4 flex items-center">
+          <Bell className="h-5 w-5 text-amber-500 mr-2 animate-pulse" />
+          <p>New order received: <strong>{newOrderAlert}</strong></p>
+        </div>
+      )}
+      
       {pendingOrders.length === 0 ? (
         <div className="bg-white p-8 rounded-lg shadow-md text-center text-gray-500">
           <p className="text-xl">No pending orders</p>
@@ -70,7 +88,9 @@ const KitchenDisplay: React.FC = () => {
           {pendingOrders.map((order) => (
             <div 
               key={order.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-amber-500"
+              className={`bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-amber-500 ${
+                newOrderAlert === order.id ? 'ring-2 ring-amber-500 animate-pulse' : ''
+              }`}
             >
               <div className="p-4 bg-amber-50 flex justify-between items-center">
                 <div>

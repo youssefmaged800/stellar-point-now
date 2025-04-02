@@ -5,7 +5,7 @@ import { Product } from '@/types/pos';
 import { Plus, Edit } from 'lucide-react';
 
 const ProductGrid: React.FC = () => {
-  const { products, categories, addToCart, selectedCategory, searchTerm } = usePOS();
+  const { products, categories, addToCart, selectedCategory, searchTerm, currency } = usePOS();
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
@@ -26,6 +26,7 @@ const ProductGrid: React.FC = () => {
           product={product} 
           categoryName={getCategoryName(product.category)}
           onAddToCart={() => addToCart(product)} 
+          currency={currency}
         />
       ))}
       
@@ -42,9 +43,10 @@ interface ProductItemProps {
   product: Product;
   categoryName: string;
   onAddToCart: () => void;
+  currency: string;
 }
 
-const ProductItem: React.FC<ProductItemProps> = ({ product, categoryName, onAddToCart }) => {
+const ProductItem: React.FC<ProductItemProps> = ({ product, categoryName, onAddToCart, currency }) => {
   const { dayOpen } = usePOS();
   const [showPriceEdit, setShowPriceEdit] = useState<boolean>(false);
   const [customPrice, setCustomPrice] = useState<string>(product.price.toString());
@@ -68,7 +70,7 @@ const ProductItem: React.FC<ProductItemProps> = ({ product, categoryName, onAddT
       
       {showPriceEdit ? (
         <div className="mt-2 flex items-center">
-          <span className="mr-1">$</span>
+          <span className="mr-1">{currency}</span>
           <input
             type="number"
             value={customPrice}
@@ -97,7 +99,7 @@ const ProductItem: React.FC<ProductItemProps> = ({ product, categoryName, onAddT
       ) : (
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center">
-            <div className="font-bold">${product.price.toFixed(2)}</div>
+            <div className="font-bold">{currency} {product.price.toFixed(2)}</div>
             <button
               onClick={togglePriceEdit}
               className="ml-1 text-gray-500 hover:text-pos-blue transition-colors"
