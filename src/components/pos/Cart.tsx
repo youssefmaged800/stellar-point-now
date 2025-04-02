@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { usePOS } from '@/contexts/POSContext';
-import { Trash2, Plus, Minus, CreditCard, Cash } from 'lucide-react';
+import { Trash2, Plus, Minus, CreditCard, Banknote } from 'lucide-react';
 
 const Cart: React.FC = () => {
   const { 
@@ -87,7 +87,7 @@ const Cart: React.FC = () => {
               selectedPayment === 'cash' ? 'bg-pos-blue text-white' : 'bg-gray-50 hover:bg-gray-100'
             }`}
           >
-            <Cash className="mb-1" size={20} />
+            <Banknote className="mb-1" size={20} />
             <span className="text-sm">Cash</span>
           </button>
           
