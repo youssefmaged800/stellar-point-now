@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, CartItem, Order, Category, ViewType, PaymentMethod } from '../types/pos';
 import { toast } from 'sonner';

@@ -57,7 +57,14 @@ const POSLayout: React.FC = () => {
         
         <main className="flex-1 overflow-y-auto p-4">
           {activeTab === 'dashboard' ? (
-            renderActiveContent()
+            <div className="flex h-full space-x-4">
+              <div className="flex-1 overflow-y-auto">
+                {renderActiveContent()}
+              </div>
+              <div className="w-96">
+                <Cart />
+              </div>
+            </div>
           ) : (
             <div className="flex h-full space-x-4">
               <div className="flex-1 overflow-y-auto">

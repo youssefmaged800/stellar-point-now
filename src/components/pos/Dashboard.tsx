@@ -3,9 +3,11 @@ import React from 'react';
 import { usePOS } from '@/contexts/POSContext';
 import DayStatus from './DayStatus';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
-  const { orders, dayOpen } = usePOS();
+  const { orders, dayOpen, products, addToCart } = usePOS();
   
   // Calculate sales data for chart
   const completedOrders = orders.filter(order => order.status === 'completed');
@@ -25,6 +27,9 @@ const Dashboard = () => {
   
   // Only show hours with sales
   const filteredSalesByHour = salesByHour.filter(item => item.sales > 0);
+
+  // Get low stock inventory items
+  const lowStockItems = products.filter(product => product.quantity < 10);
   
   return (
     <div className="space-y-6">
@@ -77,6 +82,93 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      
+      {/* Inventory section with Add buttons */}
+      <div className="bg-white p-4 rounded-lg shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Inventory Items</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="px-4 py-2 text-left">Product</th>
+                <th className="px-4 py-2 text-left">Category</th>
+                <th className="px-4 py-2 text-left">Price</th>
+                <th className="px-4 py-2 text-left">Quantity</th>
+                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {products.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2">{product.name}</td>
+                  <td className="px-4 py-2">{product.category}</td>
+                  <td className="px-4 py-2">${product.price.toFixed(2)}</td>
+                  <td className="px-4 py-2">{product.quantity}</td>
+                  <td className="px-4 py-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      product.quantity <= 0
+                        ? 'bg-red-100 text-red-800'
+                        : product.quantity < 10
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {product.quantity <= 0
+                        ? 'Out of Stock'
+                        : product.quantity < 10
+                        ? 'Low Stock'
+                        : 'In Stock'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => addToCart(product)}
+                      disabled={product.quantity <= 0 || !dayOpen}
+                      className="flex items-center"
+                    >
+                      <Plus size={16} className="mr-1" /> Add
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {products.length === 0 && (
+            <div className="text-center py-4 text-gray-500">
+              No inventory items found
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Low stock alert section */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold mb-4 text-amber-600">Low Stock Alert</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {lowStockItems.map((item) => (
+              <div key={item.id} className="p-4 border rounded-md bg-amber-50">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={() => addToCart(item)}
+                    disabled={item.quantity <= 0 || !dayOpen}
+                    className="flex items-center"
+                  >
+                    <Plus size={16} className="mr-1" /> Add
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
