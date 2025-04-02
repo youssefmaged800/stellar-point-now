@@ -10,9 +10,11 @@ import ProductGrid from './ProductGrid';
 import Cart from './Cart';
 import CategoryFilter from './CategoryFilter';
 import SearchBar from './SearchBar';
+import { format } from 'date-fns';
+import { Clock, AlertCircle } from 'lucide-react';
 
 const POSLayout: React.FC = () => {
-  const { activeTab } = usePOS();
+  const { activeTab, dayOpen, currentTime } = usePOS();
 
   const renderActiveContent = () => {
     switch (activeTab) {
@@ -34,6 +36,25 @@ const POSLayout: React.FC = () => {
       <Sidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with time and status */}
+        <header className="bg-white border-b p-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold">OMNIPOS</h1>
+          
+          <div className="flex items-center space-x-4">
+            {!dayOpen && (
+              <div className="flex items-center text-red-500">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium">Business Day Closed</span>
+              </div>
+            )}
+            
+            <div className="flex items-center bg-gray-100 px-3 py-1 rounded-md">
+              <Clock className="w-4 h-4 mr-2 text-gray-600" />
+              <span className="font-mono">{format(currentTime, 'hh:mm:ss a')}</span>
+            </div>
+          </div>
+        </header>
+        
         <main className="flex-1 overflow-y-auto p-4">
           {activeTab === 'dashboard' ? (
             renderActiveContent()

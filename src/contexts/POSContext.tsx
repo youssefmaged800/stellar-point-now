@@ -13,6 +13,9 @@ interface POSContextType {
   searchTerm: string;
   selectedCategory: string;
   selectedPayment: PaymentMethod | null;
+  dayOpen: boolean;
+  currentTime: Date;
+  dayStartTime: Date | null;
   
   setActiveTab: (tab: ViewType) => void;
   setSearchTerm: (term: string) => void;
@@ -30,6 +33,8 @@ interface POSContextType {
   modifyOrder: (orderId: string) => void;
   
   getCartTotal: () => number;
+  openDay: () => void;
+  closeDay: () => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -55,6 +60,9 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
+  const [dayOpen, setDayOpen] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [dayStartTime, setDayStartTime] = useState<Date | null>(null);
 
   // Initialize with mock data
   useEffect(() => {
@@ -63,7 +71,48 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     setCategories(mockData.categories);
   }, []);
 
+  // Set up timer for current time
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      // Check if it's 12 AM (midnight) to automatically close the day
+      if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() < 2) {
+        if (dayOpen) {
+          closeDay();
+        }
+      }
+
+      // Auto open day at beginning of day if it's not already open
+      if (now.getHours() === 0 && now.getMinutes() === 1 && now.getSeconds() < 2) {
+        if (!dayOpen) {
+          openDay();
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [dayOpen]);
+
+  const openDay = () => {
+    setDayOpen(true);
+    setDayStartTime(new Date());
+    toast.success('Business day started');
+  };
+
+  const closeDay = () => {
+    setDayOpen(false);
+    setDayStartTime(null);
+    toast.success('Business day closed');
+  };
+
   const addToCart = (product: Product) => {
+    if (!dayOpen) {
+      toast.error('Cannot add items: Business day is not open');
+      return;
+    }
+    
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
@@ -105,6 +154,11 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   };
 
   const placeOrder = () => {
+    if (!dayOpen) {
+      toast.error('Cannot place order: Business day is not open');
+      return;
+    }
+
     if (cart.length === 0) {
       toast.error('Cart is empty');
       return;
@@ -131,6 +185,11 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   };
 
   const completeOrder = (orderId: string) => {
+    if (!dayOpen) {
+      toast.error('Cannot complete order: Business day is not open');
+      return;
+    }
+    
     setOrders((prevOrders) =>
       prevOrders.map((order) =>
         order.id === orderId ? { ...order, status: 'completed' } : order
@@ -149,6 +208,11 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   };
 
   const modifyOrder = (orderId: string) => {
+    if (!dayOpen) {
+      toast.error('Cannot modify order: Business day is not open');
+      return;
+    }
+    
     const orderToModify = orders.find((order) => order.id === orderId);
     
     if (orderToModify) {
@@ -167,6 +231,9 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     searchTerm,
     selectedCategory,
     selectedPayment,
+    dayOpen,
+    currentTime,
+    dayStartTime,
     
     setActiveTab,
     setSearchTerm,
@@ -184,6 +251,8 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
     modifyOrder,
     
     getCartTotal,
+    openDay,
+    closeDay,
   };
 
   return <POSContext.Provider value={value}>{children}</POSContext.Provider>;
