@@ -202,7 +202,7 @@ const MainComponent: React.FC = () => {
     amountPaid?: number;
   }) => {
     // Place the order in the system
-    placeOrder(payment.orderId);
+    placeOrder();
     
     // Reset the order state
     clearCart();
