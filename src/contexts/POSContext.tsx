@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, CartItem, Order, Category, ViewType, PaymentMethod } from '../types/pos';
 import { toast } from 'sonner';
@@ -64,27 +63,23 @@ export const POSProvider: React.FC<POSProviderProps> = ({ children }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [dayStartTime, setDayStartTime] = useState<Date | null>(null);
 
-  // Initialize with mock data
   useEffect(() => {
     const mockData = generateMockProducts();
     setProducts(mockData.products);
     setCategories(mockData.categories);
   }, []);
 
-  // Set up timer for current time
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now);
 
-      // Check if it's 12 AM (midnight) to automatically close the day
       if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() < 2) {
         if (dayOpen) {
           closeDay();
         }
       }
 
-      // Auto open day at beginning of day if it's not already open
       if (now.getHours() === 0 && now.getMinutes() === 1 && now.getSeconds() < 2) {
         if (!dayOpen) {
           openDay();
